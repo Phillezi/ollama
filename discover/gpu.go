@@ -196,7 +196,10 @@ func initVulkanHandles() *vulkanHandles {
 	libcapPaths := FindLibCapLibs()
 
 	if len(vulkanPaths) > 0 && len(libcapPaths) > 0 {
+		slog.Info("vulkan: load libvulkan and libcap ok")
 		vHandles.deviceCount, vHandles.vulkan, vulkanLibPath, libcapLibPath = LoadVulkanMgmt(vulkanPaths, libcapPaths)
+	} else {
+		slog.Info("vulkan: failed to load libvulkan or libcap")
 	}
 
 	return vHandles
@@ -427,7 +430,7 @@ func GetGPUInfo() GpuInfoList {
 				gpuInfo.ID = C.GoString(&memInfo.gpu_id[0])
 				gpuInfo.Compute = fmt.Sprintf("%d.%d", memInfo.major, memInfo.minor)
 				gpuInfo.MinimumMemory = 0
-				gpuInfo.DependencyPath = depPaths
+				gpuInfo.DependencyPath = []string{LibOllamaPath}
 				gpuInfo.Name = C.GoString(&memInfo.gpu_name[0])
 				gpuInfo.DriverMajor = int(memInfo.major)
 				gpuInfo.DriverMinor = int(memInfo.minor)
@@ -769,7 +772,7 @@ func LoadVulkanMgmt(vulkanLibPaths []string, capLibPaths []string) (int, *C.vk_h
 
 			C.vk_init(vkLib, capLib, &resp)
 			if resp.err != nil {
-				slog.Debug("Unable to load vulkan", "library", vkLibPath, capLibPath, "error", C.GoString(resp.err))
+				slog.Error("Unable to load vulkan", "library", vkLibPath, capLibPath, "error", C.GoString(resp.err))
 				C.free(unsafe.Pointer(resp.err))
 			} else {
 				return int(resp.num_devices), &resp.ch, vkLibPath, capLibPath
